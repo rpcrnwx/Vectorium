@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vectorium.vercel.app/sitemap.xml
