@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
-import { CarbonCredit, setSelectedListing, setFilters, resetFilters } from '@/lib/redux/slices/marketplaceSlice';
-import { buyCarbonCredit } from '@/lib/redux/slices/walletSlice';
+import { CarbonCredit, setSelectedListing, setFilters, resetFilters, fetchMarketplaceData } from '@/lib/redux/slices/marketplaceSlice';
+import { purchaseCarbonCredit } from '@/lib/redux/slices/walletSlice';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Filter, Search, Leaf, ArrowUpRight, ChevronDown, X, Info, ShoppingCart } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function Marketplace() {
   
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { listings } = useAppSelector(state => state.marketplace);
+  const { listings, loading: marketplaceLoading, error } = useAppSelector(state => state.marketplace);
   const { balance } = useAppSelector(state => state.wallet);
   
   // Filter listings based on search term and category
@@ -51,15 +51,30 @@ export default function Marketplace() {
     checkUser();
   }, []);
 
+  useEffect(() => {
+    // Fetch marketplace data when component mounts
+    dispatch(fetchMarketplaceData());
+  }, [dispatch]);
+
   const handleCategorySelect = (category: string | null) => {
     setSelectedCategory(category);
     dispatch(setFilters({ category }));
+    // Refetch data with new filters
+    dispatch(fetchMarketplaceData({ 
+      category, 
+      minPrice: null, 
+      maxPrice: null, 
+      location: null, 
+      vintage: null 
+    }));
   };
 
   const clearFilters = () => {
     setSelectedCategory(null);
     setSearchTerm('');
     dispatch(resetFilters());
+    // Refetch all data
+    dispatch(fetchMarketplaceData());
   };
 
   const openPurchaseModal = (listing: CarbonCredit) => {
@@ -74,8 +89,8 @@ export default function Marketplace() {
     setPurchaseQuantity(1);
   };
 
-  const handlePurchase = () => {
-    if (!selectedListing) return;
+  const handlePurchase = async () => {
+    if (!selectedListing || !user) return;
     
     const totalCost = selectedListing.price * purchaseQuantity;
     
@@ -84,20 +99,28 @@ export default function Marketplace() {
       return;
     }
     
-    dispatch(buyCarbonCredit({
-      creditId: selectedListing.id,
-      creditName: selectedListing.name,
-      quantity: purchaseQuantity,
-      price: selectedListing.price,
-      vintage: selectedListing.vintage,
-      certificationBody: selectedListing.certificationBody,
-      carbonReduction: selectedListing.carbonReduction
-    }));
-    
-    closePurchaseModal();
-    
-    // Show success message
-    alert(`Successfully purchased ${purchaseQuantity} ${selectedListing.name} credits!`);
+    try {
+      await dispatch(purchaseCarbonCredit({
+        creditId: selectedListing.id,
+        creditName: selectedListing.name,
+        quantity: purchaseQuantity,
+        price: selectedListing.price,
+        vintage: selectedListing.vintage,
+        certificationBody: selectedListing.certificationBody,
+        carbonReduction: selectedListing.carbonReduction
+      })).unwrap();
+      
+      closePurchaseModal();
+      
+      // Refresh marketplace data to show updated quantities
+      dispatch(fetchMarketplaceData());
+      
+      // Show success message
+      alert(`Successfully purchased ${purchaseQuantity} ${selectedListing.name} credits!`);
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      alert('Purchase failed. Please try again.');
+    }
   };
 
   if (loading) {
@@ -125,22 +148,23 @@ export default function Marketplace() {
                 className="object-cover brightness-50"
               />
             </div>
-            <div className="py-16 px-8 md:py-24 md:px-12">
+            <div className="absolute inset-0 bg-black/30"></div>
+            <div className="relative py-16 px-8 md:py-24 md:px-12">
               <div className="max-w-2xl">
-                <h1 className="text-3xl md:text-4xl font-bold text-black mb-4">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-lg">
                   Carbon Credits Marketplace
                 </h1>
-                <p className="text-lg text-black mb-6">
+                <p className="text-lg text-gray-100 mb-6 drop-shadow-md leading-relaxed">
                   Browse and purchase verified carbon credits from projects around the world. Make a real impact on climate change.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <button 
                     onClick={() => window.scrollTo({ top: document.getElementById('listings')?.offsetTop || 0 - 100, behavior: 'smooth' })}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-full font-medium flex items-center gap-2 transition-colors"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 transition-colors shadow-lg hover:shadow-xl"
                   >
                     Browse Credits <ArrowUpRight className="w-4 h-4" />
                   </button>
-                  <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-full font-medium flex items-center gap-2 backdrop-blur-sm transition-colors">
+                  <button className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 backdrop-blur-sm transition-colors border border-white/30 shadow-lg hover:shadow-xl">
                     Learn More
                   </button>
                 </div>
@@ -242,6 +266,26 @@ export default function Marketplace() {
             )}
           </div>
           
+          {/* Loading State */}
+          {marketplaceLoading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+              <p className="text-red-700">Error loading marketplace data: {error}</p>
+              <button 
+                onClick={() => dispatch(fetchMarketplaceData())}
+                className="mt-2 text-red-600 hover:text-red-800 font-medium"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          
           {/* Listings */}
           <div id="listings" className="mb-8">
             <div className="flex justify-between items-center mb-6">
@@ -251,14 +295,14 @@ export default function Marketplace() {
               </div>
             </div>
             
-            {filteredListings.length === 0 ? (
+            {filteredListings.length === 0 && !marketplaceLoading ? (
               <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                 <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="w-8 h-8 text-gray-400" />
                 </div>
                 <h3 className="text-lg font-medium mb-2">No carbon credits found</h3>
                 <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filters to find what you&apos;re looking for.
+                  Try adjusting your search or filters to find what you're looking for.
                 </p>
                 <button
                   onClick={clearFilters}
@@ -325,10 +369,11 @@ export default function Marketplace() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => openPurchaseModal(listing)}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                          disabled={listing.quantity === 0}
+                          className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
                         >
                           <ShoppingCart className="w-4 h-4" />
-                          Buy Now
+                          {listing.quantity === 0 ? 'Sold Out' : 'Buy Now'}
                         </button>
                         <button
                           onClick={() => {
