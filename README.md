@@ -137,4 +137,4 @@ This application can be deployed to various platforms:
 This project is private and proprietary.
 
 ## Support
-For support, please contact the development team.
+For support, please contact the development team. 
