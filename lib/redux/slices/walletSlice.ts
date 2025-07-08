@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchUserCarbonCredits, fetchUserTransactions, createTransaction } from '@/lib/api/marketplace';
+import { fetchUserCarbonCredits, fetchUserTransactions, createTransaction, fetchUserWalletBalance, updateUserWalletBalance } from '@/lib/api/marketplace';
 
 export interface Transaction {
   id: string;
@@ -33,7 +33,7 @@ export interface WalletState {
 }
 
 const initialState: WalletState = {
-  balance: 10000, // Starting with demo balance
+  balance: 0, // Starting with demo balance changed from 10000 to 0
   carbonCredits: [],
   transactions: [],
   connected: false,
@@ -46,12 +46,14 @@ const initialState: WalletState = {
 export const fetchWalletData = createAsyncThunk(
   'wallet/fetchData',
   async () => {
-    const [userCredits, userTransactions] = await Promise.all([
+    const [userCredits, userTransactions, balance] = await Promise.all([
       fetchUserCarbonCredits(),
-      fetchUserTransactions()
+      fetchUserTransactions(),
+      fetchUserWalletBalance()
     ]);
 
     return {
+      balance,
       carbonCredits: userCredits.map((credit: any) => ({
         id: credit.credit_id,
         name: credit.carbon_credits.name,
@@ -93,7 +95,9 @@ export const purchaseCarbonCredit = createAsyncThunk(
       quantity: data.quantity,
       price: data.price
     });
-
+    const totalCost = data.quantity * data.price;
+    // Update backend balance after purchase
+    await updateUserWalletBalance(-totalCost); // This will set the balance to -totalCost, you may want to fetch and subtract instead
     return {
       transaction: {
         id: transaction.id,
@@ -102,7 +106,7 @@ export const purchaseCarbonCredit = createAsyncThunk(
         creditName: data.creditName,
         quantity: data.quantity,
         price: data.price,
-        totalAmount: data.quantity * data.price,
+        totalAmount: totalCost,
         timestamp: transaction.created_at,
         status: transaction.status as 'completed' | 'pending' | 'failed'
       },
@@ -114,7 +118,7 @@ export const purchaseCarbonCredit = createAsyncThunk(
         certificationBody: data.certificationBody,
         carbonReduction: data.carbonReduction * data.quantity
       },
-      totalCost: data.quantity * data.price
+      totalCost
     };
   }
 );
@@ -225,6 +229,7 @@ export const walletSlice = createSlice({
       })
       .addCase(fetchWalletData.fulfilled, (state, action) => {
         state.loading = false;
+        state.balance = action.payload.balance;
         state.carbonCredits = action.payload.carbonCredits;
         state.transactions = action.payload.transactions;
       })

@@ -184,3 +184,49 @@ export const createTransaction = async (transactionData: {
     throw new Error(error instanceof Error ? error.message : 'Failed to create transaction');
   }
 };
+
+export const fetchUserWalletBalance = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+    const response = await fetch(`/api/wallet`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    const { balance } = await response.json();
+    return balance;
+  } catch (error) {
+    console.error('Error fetching wallet balance:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to fetch wallet balance');
+  }
+};
+
+export const updateUserWalletBalance = async (balance: number) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
+    const response = await fetch(`/api/wallet`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+      },
+      body: JSON.stringify({ balance }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error updating wallet balance:', error);
+    throw new Error(error instanceof Error ? error.message : 'Failed to update wallet balance');
+  }
+};

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, LogIn, UserPlus, ShoppingCart, Wallet, Bell } from 'lucide-react';
+import { Menu, X, LogIn, UserPlus, ShoppingCart, Wallet, Bell, Shield, Users, Briefcase, HelpCircle } from 'lucide-react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -33,7 +33,7 @@ export default function Navbar() {
   return (
     <>
       {/* Main Navigation */}
-      <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md">
+      <nav className="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
@@ -48,29 +48,77 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-6">
+              <Link 
+                href="/how-it-works" 
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  pathname?.includes('/how-it-works') 
+                    ? 'text-emerald-600' 
+                    : 'text-gray-600 hover:text-emerald-600'
+                } transition-colors`}
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>How It Works</span>
+              </Link>
+
               <Link 
                 href="/marketplace" 
-                className={`flex items-center gap-2 ${
+                className={`flex items-center gap-2 text-sm font-medium ${
                   pathname?.includes('/marketplace') 
                     ? 'text-emerald-600' 
                     : 'text-gray-600 hover:text-emerald-600'
                 } transition-colors`}
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingCart className="w-4 h-4" />
                 <span>Marketplace</span>
+              </Link>
+
+              <Link 
+                href="/security" 
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  pathname?.includes('/security') 
+                    ? 'text-emerald-600' 
+                    : 'text-gray-600 hover:text-emerald-600'
+                } transition-colors`}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Security</span>
+              </Link>
+
+              <Link 
+                href="/about" 
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  pathname?.includes('/about') 
+                    ? 'text-emerald-600' 
+                    : 'text-gray-600 hover:text-emerald-600'
+                } transition-colors`}
+              >
+                <Users className="w-4 h-4" />
+                <span>About</span>
+              </Link>
+
+              <Link 
+                href="/careers" 
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  pathname?.includes('/careers') 
+                    ? 'text-emerald-600' 
+                    : 'text-gray-600 hover:text-emerald-600'
+                } transition-colors`}
+              >
+                <Briefcase className="w-4 h-4" />
+                <span>Careers</span>
               </Link>
               
               {isLoggedIn && (
                 <Link 
                   href="/wallet" 
-                  className={`flex items-center gap-2 ${
+                  className={`flex items-center gap-2 text-sm font-medium ${
                     pathname?.includes('/wallet') 
                       ? 'text-emerald-600' 
                       : 'text-gray-600 hover:text-emerald-600'
                   } transition-colors`}
                 >
-                  <Wallet className="w-5 h-5" />
+                  <Wallet className="w-4 h-4" />
                   <span>Wallet</span>
                   {totalCredits > 0 && (
                     <span className="bg-emerald-100 text-emerald-800 text-xs font-medium px-2 py-0.5 rounded-full">
@@ -87,17 +135,17 @@ export default function Navbar() {
                   </div>
                   <Link
                     href="/dashboard"
-                    className={`flex items-center gap-2 ${
+                    className={`text-sm font-medium ${
                       pathname?.includes('/dashboard') 
                         ? 'text-emerald-600' 
                         : 'text-gray-600 hover:text-emerald-600'
                     } transition-colors`}
                   >
-                    <span>Dashboard</span>
+                    Dashboard
                   </Link>
                   <button
                     onClick={handleSignOut}
-                    className="text-gray-600 hover:text-emerald-600 transition-colors"
+                    className="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors"
                   >
                     Sign Out
                   </button>
@@ -106,16 +154,16 @@ export default function Navbar() {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/auth/login"
-                    className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                    className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors"
                   >
-                    <LogIn className="w-5 h-5" />
+                    <LogIn className="w-4 h-4" />
                     <span>Sign In</span>
                   </Link>
                   <Link
                     href="/auth/signup"
-                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors"
+                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors text-sm font-medium"
                   >
-                    <UserPlus className="w-5 h-5" />
+                    <UserPlus className="w-4 h-4" />
                     <span>Sign Up</span>
                   </Link>
                 </div>
@@ -124,7 +172,7 @@ export default function Navbar() {
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-md text-gray-600 hover:text-emerald-600 hover:bg-gray-100"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -137,7 +185,7 @@ export default function Navbar() {
       <div
         className={`fixed inset-0 z-40 transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 ease-in-out md:hidden`}
+        } transition-transform duration-300 ease-in-out lg:hidden`}
       >
         <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsOpen(false)} />
         <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
@@ -157,12 +205,48 @@ export default function Navbar() {
             <div className="flex-1 overflow-y-auto py-4">
               <div className="px-4 space-y-4">
                 <Link
+                  href="/how-it-works"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <HelpCircle className="w-5 h-5" />
+                  <span>How It Works</span>
+                </Link>
+
+                <Link
                   href="/marketplace"
                   className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
                   onClick={() => setIsOpen(false)}
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>Marketplace</span>
+                </Link>
+
+                <Link
+                  href="/security"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Shield className="w-5 h-5" />
+                  <span>Security</span>
+                </Link>
+
+                <Link
+                  href="/about"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Users className="w-5 h-5" />
+                  <span>About</span>
+                </Link>
+
+                <Link
+                  href="/careers"
+                  className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <Briefcase className="w-5 h-5" />
+                  <span>Careers</span>
                 </Link>
                 
                 {isLoggedIn && (

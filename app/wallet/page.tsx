@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { sellCarbonCredit, fetchWalletData } from '@/lib/redux/slices/walletSlice';
+import { updateUserWalletBalance, fetchUserWalletBalance } from '@/lib/api/marketplace';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Wallet, ArrowUpRight, TrendingUp, TrendingDown, Leaf, ChevronDown, X, Info, DollarSign, BarChart2 } from 'lucide-react';
@@ -56,18 +57,27 @@ const WalletPage: NextPage = () => {
     setSellPrice(0);
   };
 
-  const handleSell = () => {
+  const handleSell = async () => {
     if (!selectedCredit) return;
-    
+    const totalAmount = sellQuantity * sellPrice;
     dispatch(sellCarbonCredit({
       creditId: selectedCredit.id,
       creditName: selectedCredit.name,
       quantity: sellQuantity,
       price: sellPrice
     }));
-    
+    // Update backend balance after selling
+    try {
+      // Fetch current backend balance
+      const backendBalance = await fetchUserWalletBalance();
+      // Add the sale amount to the backend balance
+      await updateUserWalletBalance(backendBalance + totalAmount);
+      // Refetch wallet data to sync UI
+      dispatch(fetchWalletData());
+    } catch (e) {
+      alert("Failed to update backend balance.");
+    }
     closeSellModal();
-    
     // Show success message
     alert(`Successfully sold ${sellQuantity} ${selectedCredit.name} credits!`);
   };
